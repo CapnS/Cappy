@@ -1,10 +1,8 @@
 def hey():
     "hey"
 end
-def hello(x):
-    if x == 'hello':
-        return hey()
-    end
+def hello():
+    hey()
 end
-y = hello('hello')
+y = hello()
 print(y)

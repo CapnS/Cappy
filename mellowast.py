@@ -171,7 +171,10 @@ class AssignmentFunction:
     def __init__(self, name, function, args):
         self.name = name
         self.function = function
-        self.args = args.statements if args else None
+        try:
+            self.args = args.statements
+        except AttributeError:
+            self.args = None
 
     def eval(self, env):
         env.functions[self.name] = [self.function, self.args]
