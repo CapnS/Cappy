@@ -1,0 +1,10 @@
+def hey():
+    "hey"
+end
+def hello(x):
+    if x == 'hello':
+        return hey()
+    end
+end
+y = hello('hello')
+print(y)
