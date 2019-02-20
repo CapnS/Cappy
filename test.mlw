@@ -1,8 +1,0 @@
-def hey():
-    "hey"
-end
-def hello():
-    hey()
-end
-y = hello()
-print(y)

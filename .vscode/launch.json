@@ -16,7 +16,7 @@
             "name": "Python: Current File (Integrated Terminal)",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "C:\\Users\\zacha\\OneDrive\\Documents\\Python\\Mellow\\mellow.py",
             "console": "integratedTerminal"
         },
         {

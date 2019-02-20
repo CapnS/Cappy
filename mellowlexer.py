@@ -1,4 +1,4 @@
-from rply import LexerGenerator, LexingError
+from rply import LexerGenerator
 import re
 
 class Lexer:
@@ -8,11 +8,17 @@ class Lexer:
     def _add_tokens(self):
         self.lexer.add('STRING', r'(""".*?""")|(".*?")|(\'.*?\')')
         self.lexer.add('PRINT', r'print')
-        self.lexer.add('SLEEP', r'sleep')
         self.lexer.add('END', r'end')
         self.lexer.add('open', r'open')
         self.lexer.add('read', r'read')
         self.lexer.add('return', r'return')
+        self.lexer.add('from', r'from')
+        self.lexer.add('import', r'import')
+        self.lexer.add('AND', r'AND')
+        self.lexer.add('await', r'await')
+        self.lexer.add('@', r'@')
+        self.lexer.add('{', r'{')
+        self.lexer.add('}', r'}')
         self.lexer.add(',', r',')
         self.lexer.add('.', r'\.')
         self.lexer.add('(', r'\(')
@@ -27,6 +33,7 @@ class Lexer:
         self.lexer.add('ELIF', r'elif')
         self.lexer.add('DEF', r'def')
         self.lexer.add('IDENTIFIER', r'[a-zA-Z_][a-zA-Z0-9_]*')  
+        self.lexer.add('SLEEP', r'sleep')   
         self.lexer.add('NEWLINE', r'\\n')
         self.lexer.add('COLON', r':')
         self.lexer.add('==', r'==')

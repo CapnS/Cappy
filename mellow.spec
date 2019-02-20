@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['mellow.py'],
-             pathex=['C:\\Users\\zacha\\OneDrive\\Documents\\Python\\mellow'],
+             pathex=['C:\\Users\\zacha\\OneDrive\\Documents\\Python\\Mellow'],
              binaries=[],
              datas=[],
              hiddenimports=[],

@@ -9,7 +9,8 @@ class Parser:
             '=', 'NEWLINE', 'IDENTIFIER','STRING',
             '$end', 'IF','==', '!=', '>=', '<=', '<', '>',
             'COLON', 'ELSE', 'ELIF', 'DEF', 'END', 'SLEEP',
-            ',', 'open', 'read', '.', 'return'
+            ',', 'open', 'read', '.', 'return', 'import',
+            '{', '}', 'AND', 'await', '@', 'from'
             ],
             precedence=[
                 ('left', ['SUM', 'SUB']),
@@ -17,7 +18,8 @@ class Parser:
                 ('left', ['DEF', 'END', 'return', 'IDENTIFIER']),
                 ('left', ['IF', 'COLON', 'ELIF', 'ELSE', 'NEWLINE']),
                 ('left', ['==', '!=', '>=','>', '<', '<=',]),
-                ('left', ['='])
+                ('left', ['=']),
+                ('left', ['{', '}'])
             ]
         )
         self.build()
@@ -154,25 +156,73 @@ class Parser:
             b.add_statement(p[0])
             return b
 
-        @self.pg.production("expression : IDENTIFIER ( )")
+        @self.pg.production("function : IDENTIFIER ( )")
         def function_call(env, p):
             return Function(p[0].value) 
 
-        @self.pg.production("expression : IDENTIFIER ( expressionlist )")
-        def function_call(env, p):
+        @self.pg.production("function : IDENTIFIER ( args )")
+        def function_callargs(env, p):
             have = list(p[2].statements)
             env.args[1] = have
             return Function(p[0].value, Array(p[2]))
+        
+        @self.pg.production('function : IDENTIFIER . IDENTIFIER ( ) ')
+        def importedfunc(env, p):
+            return ImportedFunction(p[0].value, p[2].value)
+        
+        @self.pg.production('function : IDENTIFIER . IDENTIFIER ( args ) ')
+        def importedfuncargs(env, p):
+            return ImportedFunction(p[0].value, p[2].value, p[4])
+
+        @self.pg.production('function : IDENTIFIER . IDENTIFIER ( args AND kwargs ) ')
+        def importedfuncboth(env, p):
+            return ImportedFunction(p[0].value, p[2].value, p[4], p[6])
+
+        @self.pg.production('function : IDENTIFIER . IDENTIFIER ( kwargs ) ')
+        def importedfunckwargs(env, p):
+            return ImportedFunction(p[0].value, p[2].value, None, p[4])
+
+        @self.pg.production('expression : function')
+        def function(env, p):
+            return p[0]
+        
+        @self.pg.production('expression : await function')
+        def awaitfunction(env, p):
+            return Await(p[1])
+
+        @self.pg.production('funcstatement : defstatement ( ) COLON NEWLINE block END')
+        def funcstate(env, p):
+            return AssignmentFunction(p[0], p[5], None)
+
+        @self.pg.production('statement : @ IDENTIFIER . IDENTIFIER NEWLINE funcstatement')
+        def blank_deco(env, p ):
+            return DecoratedFunction(p[1].value, p[3].value, p[5], False, None, None)
+
+        @self.pg.production('statement : @ IDENTIFIER . IDENTIFIER ( ) NEWLINE funcstatement')
+        def none_deco(env, p ):
+            return DecoratedFunction(p[1].value, p[3].value, p[7], True, None, None)
+
+        @self.pg.production('statement : @ IDENTIFIER . IDENTIFIER ( args AND kwargs ) NEWLINE funcstatement')
+        def both_deco(env, p ):
+            return DecoratedFunction(p[1].value, p[3].value, p[10], True, p[5], p[7])
+
+        @self.pg.production('statement : @ IDENTIFIER . IDENTIFIER ( kwargs ) NEWLINE funcstatement')
+        def kwargs_deco(env, p ):
+            return DecoratedFunction(p[1].value, p[3].value, p[8], True, None, p[5])
+
+        @self.pg.production('statement : @ IDENTIFIER . IDENTIFIER ( args ) NEWLINE funcstatement')
+        def args_deco(env, p ):
+            return DecoratedFunction(p[1].value, p[3].value, p[8], True, p[5], None)
 
         @self.pg.production("defstatement : DEF IDENTIFIER")
         def defstatement(env, p):
             return p[1].value
 
-        @self.pg.production("statement : defstatement ( ) COLON NEWLINE block END")
+        @self.pg.production("statement : funcstatement")
         def function_assign(env, p):
-            return AssignmentFunction(p[0], p[5], None)
+            return p[0]
 
-        @self.pg.production("statement : defstatement ( args ) COLON NEWLINE block END")
+        @self.pg.production("funcstatement : defstatement ( args ) COLON NEWLINE block END")
         def function_assign(env, p):
             need = list(x.name for x in p[2].statements)
             env.args[0] = need
@@ -189,12 +239,12 @@ class Parser:
             p[2].append(Variable(p[0].value))
             return p[2]
 
-        @self.pg.production('expressionlist : expression')
-        @self.pg.production('expressionlist : expression ,')
-        def expressionlist_single(env, p):
+        @self.pg.production('args : expression')
+        @self.pg.production('args : expression ,')
+        def args_single(env, p):
             return InnerArray([p[0]])
 
-        @self.pg.production('expressionlist : expression , expressionlist')
+        @self.pg.production('args : expression , args')
         def arglist(env, p):
             p[2].append(p[0])
             return p[2]
@@ -208,7 +258,7 @@ class Parser:
         @self.pg.production('expression : IDENTIFIER . read ( )')
         def readfile(env, p):
             if type(p[0]) == Open:
-                return Read(Open(p[0].filepath).eval(env))
+                return Read(Open(p[0].filepath))
             else:
                 return Read(Variable(p[0].value))
 
@@ -217,12 +267,57 @@ class Parser:
             return p[0]
         
         @self.pg.production('returning : return expression')
-        def returning(env, p):
+        def returnz(env, p):
             return Return(p[1])
+
+        @self.pg.production('statement : import idlist')
+        def importing(env, p):
+            return Import(p[1], None)
+        
+        @self.pg.production('idlist : IDENTIFIER')
+        @self.pg.production('idlist : IDENTIFIER . idlist')
+        def importz(env, p):
+            try:
+                return p[0].value +  "." + p[2]
+            except IndexError:
+                return p[0].value
+
+        @self.pg.production('statement : from idlist import IDENTIFIER')
+        def imported(env, p):
+            return Import(p[3].value, p[1])    
+
+        @self.pg.production('expression : IDENTIFIER . IDENTIFIER')
+        def importez(env, p):
+            return GetAttr(p[0].value, p[2].value)
+
+        @self.pg.production('kwargs : IDENTIFIER = expression')
+        @self.pg.production('kwargs : IDENTIFIER = expression ,')
+        def kwargs_single(state, p):
+            return InnerDict({ p[0].value: p[2] })
+
+        @self.pg.production('kwargs : IDENTIFIER = expression , kwargs')
+        def arglist(state, p):
+            p[4].update(p[0].value,p[2])
+            return p[4]
+
+        @self.pg.production('dict : expression COLON expression')
+        @self.pg.production('dict : expression COLON expression ,')
+        def kwargs_single(state, p):
+            return InnerDict({ p[0]: p[2] })
+
+        @self.pg.production('dict : expression COLON expression , dict')
+        def arglist(state, p):
+            p[4].update(p[0],p[2])
+            return p[4]
+
+        @self.pg.production('expression : { dict }')
+        def expression_dict(state, p):
+            return Dict(p[1])
 
         @self.pg.error
         def error_handler(env, token):
-            print(token)
+            if token.gettokentype() == "$end":
+                raise SyntaxError("Ran into EoF while still parsing. Check to make sure you have end after every if/def")
             print(token.getsourcepos())
             raise ValueError("Ran into a %s where it wasn't expected" % token.gettokentype())
 

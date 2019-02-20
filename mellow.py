@@ -3,6 +3,7 @@ from mellowparser import Parser
 from mellowenv import Environment
 import sys
 import os
+import asyncio
 
 try:
     filepath = os.path.realpath(__file__)
@@ -22,4 +23,10 @@ except Exception as e:
 env = Environment()
 lexer = Lexer()
 parser = Parser().get_parser()
-parser.parse(lexer.lex(text), env).eval(env)
+async def hello():
+    x = parser.parse(lexer.lex(text), env)
+    return await x.eval(env)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(hello())
+

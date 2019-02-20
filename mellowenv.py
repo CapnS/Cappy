@@ -4,3 +4,5 @@ class Environment:
         self.functions = dict()
         self.arguments = dict()
         self.args = [[],[]]
+        self.imports = dict()
+        self.decorators = dict()
