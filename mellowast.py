@@ -50,10 +50,10 @@ class Print:
 
 class String(BaseBox):
     def __init__(self, value):
-        self.value = value
+        self.value = value.strip('"\'')
 
     async def eval(self, env):
-        return self.value.strip('"\'')
+        return self.value
 
 class Variable(BaseBox):
     def __init__(self, name):
@@ -533,3 +533,18 @@ class DecoratedFunction:
             env.decorators[self.function.name] = call
             return call
         raise NameError("Variable is not defined")
+
+class Index:
+    def __init__(self, objectz, index):
+        self.object = objectz
+        self.index = index
+    
+    async def eval(self, env):
+        while True:
+            try:
+                to_return = self.object[self.index]
+                return to_return
+            except TypeError:
+                self.object = await self.object.eval(env)
+            
+        

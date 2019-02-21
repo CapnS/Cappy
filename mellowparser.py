@@ -10,7 +10,7 @@ class Parser:
             '$end', 'IF','==', '!=', '>=', '<=', '<', '>',
             'COLON', 'ELSE', 'ELIF', 'DEF', 'END', 'SLEEP',
             ',', 'open', 'read', '.', 'return', 'import',
-            '{', '}', 'AND', 'await', '@', 'from'
+            '{', '}', 'AND', 'await', '@', 'from', '[', ']'
             ],
             precedence=[
                 ('left', ['SUM', 'SUB']),
@@ -66,6 +66,10 @@ class Parser:
         def statement_expr(env, p):
             return p[0]
 
+        @self.pg.production('expression : IDENTIFIER [ expression ]')
+        def index(env, p):
+            return Index(Variable(p[0].value),p[2].value)
+            
         @self.pg.production('statement : PRINT ( expression )')
         def printsw(env, p):
             return Print(p[2])

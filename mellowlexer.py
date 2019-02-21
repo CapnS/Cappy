@@ -19,6 +19,8 @@ class Lexer:
         self.lexer.add('@', r'@')
         self.lexer.add('{', r'{')
         self.lexer.add('}', r'}')
+        self.lexer.add('[', r'\[')
+        self.lexer.add(']', r'\]')
         self.lexer.add(',', r',')
         self.lexer.add('.', r'\.')
         self.lexer.add('(', r'\(')
